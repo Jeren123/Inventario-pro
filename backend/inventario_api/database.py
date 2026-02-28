@@ -1,15 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://root:Ungranano2024+@localhost/inventario_inteligente")
-
-# Render usa "postgres://" pero SQLAlchemy necesita "postgresql://"
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+DATABASE_URL = "postgresql://inventario_db_bavk_user:PhaZmJZ9zJfm0V6TWNf3PYfcfDUnp7fs@dpg-d6hfjbjuibrs739upb10-a/inventario_db_bavk"
 
 engine = create_engine(DATABASE_URL)
 
