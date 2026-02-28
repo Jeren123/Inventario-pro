@@ -9,3 +9,4 @@ httpx
 alembic
 python-dotenv
 google-generativeai
+email-validator
