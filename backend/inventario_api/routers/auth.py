@@ -1,45 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..database import SessionLocal
 from ..models import Usuario
 from ..core.security import hash_password, verificar_password, crear_token
-from ..core.dependencies import solo_admin
+from ..core.dependencies import get_db, solo_admin
 from .. import schemas
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post("/register")
 def register(
     user: schemas.UsuarioCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(solo_admin)   # ← solo admins autenticados
+    current_user: Usuario = Depends(solo_admin)
 ):
-    usuario_existente = db.query(Usuario).filter(
-        Usuario.email == user.email
-    ).first()
-
-    if usuario_existente:
+    if db.query(Usuario).filter(Usuario.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email ya registrado")
 
-    nuevo_usuario = Usuario(
+    nuevo = Usuario(
         nombre=user.nombre,
         email=user.email,
         password=hash_password(user.password),
         id_rol=user.id_rol
     )
-
-    db.add(nuevo_usuario)
+    db.add(nuevo)
     db.commit()
-
     return {"mensaje": "Usuario creado correctamente"}
 
 
@@ -81,10 +66,7 @@ def eliminar_usuario(
 
 @router.post("/login", response_model=schemas.Token)
 def login(data: schemas.UsuarioLogin, db: Session = Depends(get_db)):
-
-    usuario = db.query(Usuario).filter(
-        Usuario.email == data.email
-    ).first()
+    usuario = db.query(Usuario).filter(Usuario.email == data.email).first()
 
     if not usuario or not verificar_password(data.password, usuario.password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
@@ -94,8 +76,4 @@ def login(data: schemas.UsuarioLogin, db: Session = Depends(get_db)):
         "id_usuario": usuario.id_usuario,
         "id_rol": usuario.id_rol
     })
-
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+    return {"access_token": token, "token_type": "bearer"}

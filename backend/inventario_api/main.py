@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import asyncio
+import os
 from fastapi import FastAPI
 from .database import engine
 from .models import Base
@@ -10,10 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Arranque: iniciar bot de Telegram en background ──
     bot_task = asyncio.create_task(polling_loop())
     yield
-    # ── Cierre: detener bot limpiamente ──
     bot_task.cancel()
     try:
         await bot_task
@@ -23,9 +22,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# CORS — funciona en local y en producción
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://inventario-pro-frontend.vercel.app",
+]
+
+# Si hay una URL de frontend en variables de entorno, agregarla también
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+if FRONTEND_URL:
+    origins.append(FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

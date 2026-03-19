@@ -1,31 +1,23 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import desc
 from typing import Optional
 from datetime import datetime
-from ..database import SessionLocal
 from ..models import Venta, DetalleVenta, Producto, Usuario
-from ..core.dependencies import solo_admin
+from ..core.dependencies import get_db, solo_admin
 
 router = APIRouter(prefix="/historial-ventas", tags=["Historial Ventas"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.get("/")
 def listar_ventas(
     fecha_inicio: Optional[str] = Query(None),
-    fecha_fin:    Optional[str] = Query(None),
-    limit:        int = Query(50, le=200),
+    fecha_fin: Optional[str] = Query(None),
+    limit: int = Query(50, le=200),
     db: Session = Depends(get_db),
     user: Usuario = Depends(solo_admin)
 ):
     query = db.query(Venta)
-
     if fecha_inicio:
         query = query.filter(Venta.fecha >= datetime.fromisoformat(fecha_inicio))
     if fecha_fin:
